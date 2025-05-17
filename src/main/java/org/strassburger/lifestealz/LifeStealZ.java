@@ -1,5 +1,6 @@
 package org.strassburger.lifestealz;
 
+import com.tcoded.folialib.FoliaLib;
 import org.bukkit.Bukkit;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
@@ -23,6 +24,8 @@ import org.strassburger.lifestealz.util.worldguard.WorldGuardManager;
 import java.io.File;
 
 public final class LifeStealZ extends JavaPlugin {
+
+    private static FoliaLib foliaLib;
 
     private VersionChecker versionChecker;
     private Storage storage;
@@ -90,6 +93,8 @@ public final class LifeStealZ extends JavaPlugin {
         eliminatedPlayersCache = new EliminatedPlayersCache(this);
         offlinePlayerCache = new OfflinePlayerCache(this);
 
+        foliaLib = new FoliaLib(this);
+
         new CommandManager(this).registerCommands();
 
         new EventManager(this).registerListeners();
@@ -105,12 +110,14 @@ public final class LifeStealZ extends JavaPlugin {
         }
 
         getLogger().info("LifeStealZ enabled!");
+
     }
 
     @Override
     public void onDisable() {
         getLogger().info("Canceling all running tasks...");
         asyncTaskManager.cancelAllTasks();
+        asyncTaskManager.cancelAllWrappedTasks();
         getLogger().info("LifeStealZ disabled!");
     }
 
@@ -220,5 +227,9 @@ public final class LifeStealZ extends JavaPlugin {
 
     public File getPluginFile() {
         return this.getFile();
+    }
+
+    public static FoliaLib getFoliaLib() {
+        return foliaLib;
     }
 }

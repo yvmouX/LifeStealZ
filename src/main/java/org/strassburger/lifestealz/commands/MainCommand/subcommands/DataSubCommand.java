@@ -1,5 +1,6 @@
 package org.strassburger.lifestealz.commands.MainCommand.subcommands;
 
+import com.tcoded.folialib.wrapper.task.WrappedTask;
 import org.bukkit.command.CommandSender;
 import org.bukkit.scheduler.BukkitTask;
 import org.strassburger.lifestealz.LifeStealZ;
@@ -50,25 +51,47 @@ public final class DataSubCommand implements SubCommand {
                 "exportingData",
                 "&7Exporting player data..."
         ));
-        BukkitTask task = plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            String filePath = storage.export(fileName);
-            if (filePath != null) {
-                sender.sendMessage(MessageUtils.getAndFormatMsg(
-                        true,
-                        "exportData",
-                        "&7Successfully exported player data to &c%file%",
-                        new MessageUtils.Replaceable("%file%", filePath)
-                ));
-            } else {
-                sender.sendMessage(MessageUtils.getAndFormatMsg(
-                        false,
-                        "exportDataError",
-                        "&cFailed to export data! Check console for details."
-                ));
-            }
-        });
-        plugin.getAsyncTaskManager().addTask(task);
-        return true;
+        if (LifeStealZ.getFoliaLib().isFolia()) {
+           WrappedTask task = (WrappedTask) LifeStealZ.getFoliaLib().getScheduler().runAsync(wrappedTask -> {
+               String filePath = storage.export(fileName);
+               if (filePath != null) {
+                   sender.sendMessage(MessageUtils.getAndFormatMsg(
+                           true,
+                           "exportData",
+                           "&7Successfully exported player data to &c%file%",
+                           new MessageUtils.Replaceable("%file%", filePath)
+                   ));
+               } else {
+                   sender.sendMessage(MessageUtils.getAndFormatMsg(
+                           false,
+                           "exportDataError",
+                           "&cFailed to export data! Check console for details."
+                   ));
+               }
+           });
+           plugin.getAsyncTaskManager().addWrappedTask(task);
+           return true;
+        } else {
+            BukkitTask task = plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                String filePath = storage.export(fileName);
+                if (filePath != null) {
+                    sender.sendMessage(MessageUtils.getAndFormatMsg(
+                            true,
+                            "exportData",
+                            "&7Successfully exported player data to &c%file%",
+                            new MessageUtils.Replaceable("%file%", filePath)
+                    ));
+                } else {
+                    sender.sendMessage(MessageUtils.getAndFormatMsg(
+                            false,
+                            "exportDataError",
+                            "&cFailed to export data! Check console for details."
+                    ));
+                }
+            });
+            plugin.getAsyncTaskManager().addTask(task);
+            return true;
+        }
     }
 
     private boolean handleImport(CommandSender sender, String fileName) {
@@ -77,17 +100,31 @@ public final class DataSubCommand implements SubCommand {
                 "importingData",
                 "&7Importing player data..."
         ));
-        BukkitTask task = plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
-            storage.importData(fileName);
-            sender.sendMessage(MessageUtils.getAndFormatMsg(
-                    true,
-                    "importData",
-                    "&7Successfully imported &c%file%.csv&7!\n&cPlease restart the server, to ensure flawless migration!",
-                    new MessageUtils.Replaceable("%file%", fileName)
-            ));
-        });
-        plugin.getAsyncTaskManager().addTask(task);
-        return true;
+        if (LifeStealZ.getFoliaLib().isFolia()) {
+            WrappedTask task = (WrappedTask) LifeStealZ.getFoliaLib().getScheduler().runAsync(wrappedTask ->{
+                storage.importData(fileName);
+                sender.sendMessage(MessageUtils.getAndFormatMsg(
+                        true,
+                        "importData",
+                        "&7Successfully imported &c%file%.csv&7!\n&cPlease restart the server, to ensure flawless migration!",
+                        new MessageUtils.Replaceable("%file%", fileName)
+                ));
+            });
+            plugin.getAsyncTaskManager().addWrappedTask(task);
+            return true;
+        } else {
+            BukkitTask task = plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                storage.importData(fileName);
+                sender.sendMessage(MessageUtils.getAndFormatMsg(
+                        true,
+                        "importData",
+                        "&7Successfully imported &c%file%.csv&7!\n&cPlease restart the server, to ensure flawless migration!",
+                        new MessageUtils.Replaceable("%file%", fileName)
+                ));
+            });
+            plugin.getAsyncTaskManager().addTask(task);
+            return true;
+        }
     }
 
     @Override

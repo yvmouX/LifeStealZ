@@ -115,14 +115,19 @@ public final class PlayerDeathListener implements Listener {
         final boolean disableBanOnElimination = plugin.getConfig().getBoolean("disablePlayerBanOnElimination");
         final boolean announceElimination = plugin.getConfig().getBoolean("announceElimination");
 
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+        Runnable runnable = () -> {
             for (String command : elimCommands) {
                 plugin.getServer().dispatchCommand(
                         plugin.getServer().getConsoleSender(),
                         command.replace("&player&", player.getName())
                 );
             }
-        }, 1L);
+        };
+        if (LifeStealZ.getFoliaLib().isFolia()) {
+            LifeStealZ.getFoliaLib().getScheduler().runLater(runnable, 1L);
+        } else {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, runnable, 1L);
+        }
 
         if (disableBanOnElimination) {
             double respawnHP = plugin.getConfig().getInt("reviveHearts") * 2;
@@ -132,16 +137,21 @@ public final class PlayerDeathListener implements Listener {
             return;
         }
 
-        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+        Runnable runnable2 = () -> {
             Component kickMessage = MessageUtils.getAndFormatMsg(
                     false,
                     "eliminatedJoin",
                     "&cYou don't have any hearts left!"
             );
             if (player.isOnline()) { // Avoids trying to kick NPCs since they are not online
-            	player.kick(kickMessage);
+                player.kick(kickMessage);
             }
-        }, 1L);
+        };
+        if (LifeStealZ.getFoliaLib().isFolia()) {
+            LifeStealZ.getFoliaLib().getScheduler().runLater(runnable2, 1L);
+        } else {
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin,runnable2, 1L);
+        }
 
         if (announceElimination) {
             String messageKey = isDeathByPlayer ? "eliminationAnnouncement" : "eliminateionAnnouncementNature";

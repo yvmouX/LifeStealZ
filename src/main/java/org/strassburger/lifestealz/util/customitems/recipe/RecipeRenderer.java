@@ -1,5 +1,6 @@
 package org.strassburger.lifestealz.util.customitems.recipe;
 
+import com.tcoded.folialib.wrapper.task.WrappedTask;
 import org.bukkit.*;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -18,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 final class RecipeRenderer {
     private final LifeStealZ plugin;
     private final Map<Inventory, List<Integer>> animationMap = new HashMap<>();
+    private final Map<Inventory, List<WrappedTask>> animationMapFolia = new HashMap<>();
 
     public RecipeRenderer(LifeStealZ plugin) {
         this.plugin = plugin;
@@ -32,6 +34,10 @@ final class RecipeRenderer {
         if (animationMap.containsKey(inventory)) animationMap.get(inventory).add(taskId);
         else animationMap.put(inventory, new ArrayList<>(Collections.singletonList(taskId)));
     }
+    private void addAnimationFolia(Inventory inventory, WrappedTask task) {
+        if (animationMapFolia.containsKey(inventory)) animationMapFolia.get(inventory).add(task);
+        else animationMapFolia.put(inventory, new ArrayList<>(Collections.singletonList(task)));
+    }
 
     /**
      * Cancels all animations for an inventory
@@ -43,6 +49,14 @@ final class RecipeRenderer {
                 Bukkit.getScheduler().cancelTask(taskId);
             }
             animationMap.remove(inventory);
+        }
+    }
+    public void cancelAnimationsFolia(Inventory inventory) {
+        if (animationMapFolia.containsKey(inventory)) {
+            for (WrappedTask task : animationMapFolia.get(inventory)) {
+                task.cancel();
+            }
+            animationMapFolia.remove(inventory);
         }
     }
 
@@ -210,17 +224,26 @@ final class RecipeRenderer {
             index.set((currentIndex + 1) % materialList.size());
         };
 
+        if (LifeStealZ.getFoliaLib().isFolia()) {
+            WrappedTask task = LifeStealZ.getFoliaLib().getScheduler().runTimer(runnable, 0L, 20L);
+            if (task == null) return;
+            addAnimationFolia(inventory, task);
+            // Cancel the task after 30 seconds
+            LifeStealZ.getFoliaLib().getScheduler().runLater(() -> {
+                task.cancel();
+                if (inventory != null) inventory.setItem(slot, new CustomItem(materialList.get(0)).makeForbidden().getItemStack());
+            }, 20 * 30L);
+        } else {
         int taskId = Bukkit.getScheduler().scheduleSyncRepeatingTask(plugin, runnable, 0L, 20L);
-
         if (taskId == -1) return;
-
         addAnimation(inventory, taskId);
-
         // Cancel the task after 30 seconds
         Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
             Bukkit.getScheduler().cancelTask(taskId);
             if (inventory != null) inventory.setItem(slot, new CustomItem(materialList.get(0)).makeForbidden().getItemStack());
         }, 20 * 30);
+        }
+
     }
 
     private Set<String> getItemIds() {

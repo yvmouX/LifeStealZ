@@ -45,50 +45,58 @@ public final class DebugSubCommand implements SubCommand {
         ));
 
         // Run asynchronously
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            try {
-                String debugDump = generateDebugDump();
-                String pasteUrl = uploadToMclogs(debugDump);
+        if (LifeStealZ.getFoliaLib().isFolia()) {
+            LifeStealZ.getFoliaLib().getScheduler().runAsync(wrappedTask -> {
+                runCode(sender);
+            });
+        } else {
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () ->{
+                runCode(sender);
+            });
+        }
+        return true;
+    }
+    private void runCode(CommandSender sender) {
+        try {
+            String debugDump = generateDebugDump();
+            String pasteUrl = uploadToMclogs(debugDump);
 
-                if (pasteUrl != null) {
-                    // Clean up any escaped slashes
-                    pasteUrl = pasteUrl.replace("\\/", "/");
+            if (pasteUrl != null) {
+                // Clean up any escaped slashes
+                pasteUrl = pasteUrl.replace("\\/", "/");
 
-                    // Create a formatted message with a clickable link
-                    Component message = MessageUtils.getAndFormatMsg(
-                            false,
-                            "debugReportUploaded",
-                            "&aDebug report uploaded: "
-                            )
-                            .append(
-                                    MessageUtils.formatMsg("&7" + pasteUrl)
-                                            .clickEvent(ClickEvent.openUrl(pasteUrl))
-                                            .hoverEvent(HoverEvent.showText(MessageUtils.getAndFormatMsg(
-                                                    false,
-                                                    "clickToOpenDebugReport",
-                                                    "&eClick to open the debug report"
-                                            )))
-                            );
+                // Create a formatted message with a clickable link
+                Component message = MessageUtils.getAndFormatMsg(
+                                false,
+                                "debugReportUploaded",
+                                "&aDebug report uploaded: "
+                        )
+                        .append(
+                                MessageUtils.formatMsg("&7" + pasteUrl)
+                                        .clickEvent(ClickEvent.openUrl(pasteUrl))
+                                        .hoverEvent(HoverEvent.showText(MessageUtils.getAndFormatMsg(
+                                                false,
+                                                "clickToOpenDebugReport",
+                                                "&eClick to open the debug report"
+                                        )))
+                        );
 
-                    sender.sendMessage(message);
-                } else {
-                    sender.sendMessage(MessageUtils.getAndFormatMsg(
-                            false,
-                            "failedToUploadDebugReport",
-                            "&cFailed to upload debug report. Please try again later."
-                    ));
-                }
-            } catch (Exception e) {
-                plugin.getLogger().log(Level.SEVERE, "Error generating debug report", e);
+                sender.sendMessage(message);
+            } else {
                 sender.sendMessage(MessageUtils.getAndFormatMsg(
                         false,
-                        "errorWhileGeneratingDebugReport",
-                        "&cAn error occurred while generating the debug report."
+                        "failedToUploadDebugReport",
+                        "&cFailed to upload debug report. Please try again later."
                 ));
             }
-        });
-
-        return true;
+        } catch (Exception e) {
+            plugin.getLogger().log(Level.SEVERE, "Error generating debug report", e);
+            sender.sendMessage(MessageUtils.getAndFormatMsg(
+                    false,
+                    "errorWhileGeneratingDebugReport",
+                    "&cAn error occurred while generating the debug report."
+            ));
+        }
     }
 
     @Override
